@@ -9,15 +9,17 @@ import os
 import wolframalpha
 from functools import reduce
 from operator import mul
+
 from config_factorial import *
 
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-SINGLE_FACTORIAL_UPPER_LIMIT = 1000000000  # largest single factorial it will calculate
+SINGLE_FACTORIAL_UPPER_LIMIT = 1,000,000,000  # largest single factorial it will calculate
 MULTI_FACTORIAL_UPPER_LIMIT = 10000  # largest multifactorial it will calculate
 EXCLAMATION_MARK_LIMIT = 6  # most number of exclamation marks allowed in a multifactorial comment
 WOLFRAM_SCIENTIFIC_START = 10  # single factorials bigger than 10! are in scientific notation on wolfram's API
 WOLFRAM_FULL_ANSWER_CUT = 11077  # factorials bigger than 11077! are no longer written out in full in the API
+SQUIGGLE = " ≈ ".decode('utf-8')
 
 line_space = '''
 
@@ -25,7 +27,7 @@ line_space = '''
 commentFooter = '''
 
 ---  
-^^I ^^am ^^a ^^bot, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author +\
+^^I ^^am ^^a ^^bot ^^testing, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author +\
                 ''' ^^if ^^you ^^have ^^any ^^questions.'''
 
 
@@ -76,26 +78,55 @@ def title_parse(submission):
             # get the post title
             title = string_split(submission.title)
             # regex matching for any number of digits before any number of exclamation marks
-            if re.search(r'\d+\!+', title):
-                factorial = re.search(r'\d+\!+', title)
+            if re.search(r'(\d+?.)*\d+!+', title):
+                factorial = re.search(r'(\d+?.)*\d+!+', title)
                 # find the number of exclamation marks used
-                excalamtion = re.search(r'\!+', factorial.group())
+                excalamtion = re.search(r'!+', factorial.group())
                 number_of_exclamations = len(excalamtion.group())
                 # take the integer part of the string, exclude the exclamation marks
-                num = int(factorial.group()[:-number_of_exclamations])
+                string_num = factorial.group()[:-number_of_exclamations]
+
+                # count number of 'decimal points'
+                number_of_points = string_num.count('.')
+                print(number_of_points)
+                if number_of_points > 1:
+                    num = int("".join(string_num.split(".")))
+                    #print("multi decimal is " + num)
+                    print("num: ")
+                    print(num)
+                    print("===")
+                elif number_of_points == 0:
+                    num = int(string_num)
+                    #print("single decimal is " + num)
+                    print("num: ")
+                    print(num)
+                    print("===")
+                else:
+                    print("Currently does not handle deciamls")
+                    return
+
 
                 if number_of_exclamations == 1:
-                    print(num)
                     if num < SINGLE_FACTORIAL_UPPER_LIMIT:
                         reply_to_post(num, submission)
                 else:
                     if num < MULTI_FACTORIAL_UPPER_LIMIT:
                         if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
                             ans = multifactorial(num, number_of_exclamations)
-                            ansstr = str(ans)
-                            
+
+                            string_ans = str(ans)
+                            if len(string_ans) > 8:
+                                abc = string_ans[0:3]
+                                prefix = round(int(abc) / 100.0, 2)
+                                power = len(string_ans) - 1
+                                ans = str(prefix) + ' x 10^' + str(power)
+                                sign = SQUIGGLE
+                            else:
+                                sign = " = "
+
                             # construct the comment to be posted
-                            comment = str(num) + "!" * number_of_exclamations + " = " + str(ans) + ' ' + commentFooter
+                            comment = str(num) + "!" * number_of_exclamations + sign + str(ans) + \
+                                ' ' + commentFooter
 
                             submission.add_comment(comment)
 
@@ -147,12 +178,9 @@ def reply_to_post(num, submission):
         # format the factorial in scientific e notation
         e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
 
-        # approximation sign
-        squiggle = " ≈ ".decode('utf-8')
-
         # construct the entire comment to be posted
-        comment = str(orig) + squiggle + factorial + ' ' + \
-                  line_space + str(orig) + squiggle + e_factorial + commentFooter
+        comment = str(orig) + SQUIGGLE + factorial + ' ' + \
+            line_space + str(orig) + SQUIGGLE + e_factorial + commentFooter
 
     else:
         # construct the comment to be posted
@@ -166,7 +194,7 @@ def reply_to_post(num, submission):
 if __name__ == "__main__":
 
     try:
-        r = praw.Reddit(user_agent="FactorialBot")
+        r = praw.Reddit(user_agent="FactorialCalc")
         r.login(username, password)
     except Exception as e:
         print("Login Error")
