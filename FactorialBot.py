@@ -25,7 +25,7 @@ line_space = '''
 commentFooter = '''
 
 ---  
-^^I ^^am ^^a ^^bot ^^testing, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author +\
+^^I ^^am ^^a ^^bot, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author +\
                 ''' ^^if ^^you ^^have ^^any ^^questions.'''
 
 
@@ -93,16 +93,7 @@ def title_parse(submission):
                         if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
                             ans = multifactorial(num, number_of_exclamations)
                             ansstr = str(ans)
-                            # if len(ansstr) > 8:
-                            #    abc = ansstr[0:4]
-                            #    prefix = round(int(abc) / 1000.0, 2)
-                            #    power = len(ansstr) - 3
-                            #    factorial = str(prefix) + ' x 10^' + str(power)
-                            #
-                            #    squiggle = " ≈ ".decode('utf-8')
-                            #    comment = str(num) + "!" + squiggle + factorial + ' ' + commentFooter
-                            # else:
-
+                            
                             # construct the comment to be posted
                             comment = str(num) + "!" * number_of_exclamations + " = " + str(ans) + ' ' + commentFooter
 
