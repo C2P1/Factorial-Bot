@@ -14,7 +14,7 @@ from config_factorial import *
 
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-SINGLE_FACTORIAL_UPPER_LIMIT = 1,000,000,000  # largest single factorial it will calculate
+SINGLE_FACTORIAL_UPPER_LIMIT = 1, 000, 000, 000  # largest single factorial it will calculate
 MULTI_FACTORIAL_UPPER_LIMIT = 10000  # largest multifactorial it will calculate
 EXCLAMATION_MARK_LIMIT = 6  # most number of exclamation marks allowed in a multifactorial comment
 WOLFRAM_SCIENTIFIC_START = 10  # single factorials bigger than 10! are in scientific notation on wolfram's API
@@ -27,7 +27,7 @@ line_space = '''
 commentFooter = '''
 
 ---  
-^^I ^^am ^^a ^^bot ^^testing, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author +\
+^^I ^^am ^^a ^^bot ^^testing, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author + \
                 ''' ^^if ^^you ^^have ^^any ^^questions.'''
 
 
@@ -89,26 +89,18 @@ def title_parse(submission):
                 # count number of 'decimal points'
                 number_of_points = string_num.count('.')
                 print(number_of_points)
+                is_decimal = False
                 if number_of_points > 1:
                     num = int("".join(string_num.split(".")))
-                    #print("multi decimal is " + num)
-                    print("num: ")
-                    print(num)
-                    print("===")
                 elif number_of_points == 0:
                     num = int(string_num)
-                    #print("single decimal is " + num)
-                    print("num: ")
-                    print(num)
-                    print("===")
                 else:
-                    print("Currently does not handle deciamls")
-                    return
-
+                    num = float(string_num)
+                    is_decimal = True
 
                 if number_of_exclamations == 1:
                     if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                        reply_to_post(num, submission)
+                        reply_to_post(num, submission, is_decimal)
                 else:
                     if num < MULTI_FACTORIAL_UPPER_LIMIT:
                         if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
@@ -126,7 +118,7 @@ def title_parse(submission):
 
                             # construct the comment to be posted
                             comment = str(num) + "!" * number_of_exclamations + sign + str(ans) + \
-                                ' ' + commentFooter
+                                      ' ' + commentFooter
 
                             submission.add_comment(comment)
 
@@ -139,7 +131,7 @@ def title_parse(submission):
             f.write('{0}\n'.format(post_id))
 
 
-def reply_to_post(num, submission):
+def reply_to_post(num, submission, is_decimal):
     print('replying to post...')
     # login in to wolfram alpha and submit the factorial to be calculated
     app_id = wolfram_app_id
@@ -154,6 +146,12 @@ def reply_to_post(num, submission):
 
     # the factorial that was queried
     orig = lines[0]
+
+    if is_decimal:
+        comment = str(orig) + " = " + lines[1] + ' ' + commentFooter
+        print(comment)
+        submission.add_comment(comment)
+        return
 
     # if the number to calculate the factorial of is bigger than 10 then the answer is returned in scientific form
     # and thus needs more processing to format it correctly in to a comment
