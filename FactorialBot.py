@@ -184,17 +184,20 @@ def reply_to_post(num, submission, is_decimal):
         # format the factorial in scientific e notation
         # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
 
-        number_length = "Number length: " + digits
+        try:
+            number_length = "Number length: " + digits
+        except Exception:
+            number_length = exponent[3:] + 1
 
-        print("here")
-        print(exponent[3:])
-        print(relative_size_fact(exponent[3:]))
-        print(1)
-
-        # construct the entire comment to be posted
-        comment = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
-            number_length + '  ' + line_space + '---  ' + line_space + relative_size_fact(exponent[3:]) + '  ' + \
-            line_space + commentFooter
+        if relative_size_fact(exponent[3:]) is not None:
+            # construct the entire comment to be posted
+            comment = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
+                number_length + '  ' + line_space + '---  ' + line_space + relative_size_fact(exponent[3:]) + '  ' + \
+                line_space + commentFooter
+        else:
+            # construct the entire comment to be posted
+            comment = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
+                      number_length + '  ' + line_space + commentFooter
 
     else:
         # construct the comment to be posted
