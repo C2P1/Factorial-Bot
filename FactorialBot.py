@@ -435,7 +435,7 @@ def comment_parse():
 
     for mention in reddit.inbox.comment_replies(limit=2):
         text = mention.body
-        if "+/u/factorial-bot" in text.lower():
+        if "+/u/factorial-bot" in text.lower() or "+u/factorial-bot" in text.lower():
             if re.search(r'(\d+?.)*\d+!+', text):
                 print(1)
                 comment_skip(mention)
