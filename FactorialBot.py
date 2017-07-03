@@ -43,7 +43,12 @@ def recent_posts():
                 sub_age = int(my_time - submission.created_utc)
                 print(sub_age)
                 if sub_age < 1000:
-                    title_parse(submission)
+                    result = extract_factorial(submission, submission.title)
+                    num = result['number']
+                    is_decimal = result['is_decimal']
+                    comment_to_add = construct_comment(num, is_decimal)
+                    submission.reply(comment_to_add)
+
 
     except Exception as error:
         print(str(error))
@@ -61,7 +66,7 @@ def multifactorial(n, m):
     return reduce(mul, range(n, 0, -m))
 
 
-def title_parse(submission):
+def extract_factorial(submission, content):
     # check tp see if there is a log of posts already replied to
     if not os.path.isfile("posts_replied_to_by_factorial.txt"):
         # start an empty list to fill with the ids of posts replied to
@@ -78,7 +83,7 @@ def title_parse(submission):
 
         if submission.id not in posts_replied_to:
             # get the post title
-            title = string_split(submission.title)
+            title = string_split(content)
             # regex matching for any number of digits before any number of exclamation marks
             if re.search(r'(\d+?.)*\d+!+', title):
                 factorial = re.search(r'(\d+?.)*\d+!+', title)
@@ -102,10 +107,16 @@ def title_parse(submission):
 
                 if number_of_exclamations == 1:
                     if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                        reply_to_post(num, submission, is_decimal)
+                        return {'number': num, 'is_decimal': is_decimal}
                 else:
                     if num < MULTI_FACTORIAL_UPPER_LIMIT:
                         if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
+
+
+
+                            # calculate multifactorial function
+
+
                             ans = multifactorial(num, number_of_exclamations)
 
                             string_ans = str(ans)
@@ -131,81 +142,6 @@ def title_parse(submission):
     with open("posts_replied_to_by_factorial.txt", "w") as f:
         for post_id in posts_replied_to:
             f.write('{0}\n'.format(post_id))
-
-
-def reply_to_post(num, submission, is_decimal):
-    print('replying to post...')
-    # login in to wolfram alpha and submit the factorial to be calculated
-    app_id = wolfram_app_id
-    client = wolframalpha.Client(app_id)
-    res = client.query(str(num) + '!')
-
-    # put the result(s) in to a list
-    lines = []
-    for pod in res.pods:
-        for sub in pod.subpods:
-            lines.append(sub['plaintext'])
-
-    # the factorial that was queried
-    orig = lines[0]
-
-    lines = [x for x in lines if x is not None]
-
-    for item in lines:
-        if "decimal digits" in item:
-            digits = item
-
-    if is_decimal:
-        comment = str(orig) + " = " + lines[1] + ' ' + commentFooter
-        print(comment)
-        submission.reply(comment)
-        return
-
-    # if the number to calculate the factorial of is bigger than 10 then the answer is returned in scientific form
-    # and thus needs more processing to format it correctly in to a comment
-    if num > WOLFRAM_SCIENTIFIC_START:
-        # once the number to calculate the factorial of passes a certain point, the full answer of every single digit
-        # is no longer written out and so the first result is to be taken instead of the second
-        if num > WOLFRAM_FULL_ANSWER_CUT:
-            ans = lines[1]
-        else:
-            ans = lines[2]
-        print(ans)
-        # round the mantissa of the answer to two decimal places
-        mantissa = str(round(float(ans[:8]), 2))
-
-        # find the exponent in the string
-        space = ans.find(' ')
-        exponent = ans[space + 3:]
-
-        # format the factorial in scientific x10 notation
-        factorial = str(mantissa) + ' x ' + exponent
-
-        # format the factorial in scientific e notation
-        # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
-
-        try:
-            number_length = "Number length: " + digits
-        except Exception:
-            number_length = exponent[3:] + 1
-
-        if relative_size_fact(exponent[3:]) is not None:
-            # construct the entire comment to be posted
-            comment = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
-                number_length + '  ' + line_space + '---  ' + line_space + relative_size_fact(exponent[3:]) + '  ' + \
-                line_space + commentFooter
-        else:
-            # construct the entire comment to be posted
-            comment = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
-                      number_length + '  ' + line_space + commentFooter
-
-    else:
-        # construct the comment to be posted
-        comment = str(orig) + " = " + lines[1] + ' ' + commentFooter
-
-    print(comment)
-
-    submission.reply(comment)
 
 
 def relative_size_fact(power):
@@ -277,8 +213,35 @@ def number_fact(number):
         return "3628800 is a number that cannot be written as a sum of 3 squares."
 
 
-def reply_to_comment(num, comment, is_decimal):
-    print('replying to comment...')
+def comment_control():
+    for comment in reddit.inbox.mentions(limit=2):
+        result = comment_parse(comment)
+        num = result['number']
+        is_decimal = result['is_decimal']
+        comment_to_make = construct_comment(num, is_decimal)
+        comment.reply(comment_to_make)
+
+    for comment in reddit.inbox.comment_replies(limit=2):
+        comment_parse(comment)
+        num = result['number']
+        is_decimal = result['is_decimal']
+        comment_to_make = construct_comment(num, is_decimal)
+        comment.reply(comment_to_make)
+
+
+def comment_parse(comment):
+    text = comment.body
+    if "+/u/factorial-bot" in text.lower() or "+u/factorial-bot" in text.lower():
+        if re.search(r'(\d+?.)*\d+!+', text):
+            return extract_factorial(comment, text)
+        else:
+            parent = comment.parent()
+            if parent.name != "Factorial-Bot":
+                return extract_factorial(parent, text)
+
+
+def construct_comment(num, is_decimal):
+    print('constructing comment...')
     # login in to wolfram alpha and submit the factorial to be calculated
     app_id = wolfram_app_id
     client = wolframalpha.Client(app_id)
@@ -300,10 +263,8 @@ def reply_to_comment(num, comment, is_decimal):
             digits = item
 
     if is_decimal:
-        commentToAdd = str(orig) + " = " + lines[1] + ' ' + commentFooter
-        print(comment)
-        comment.reply(commentToAdd)
-        return
+        comment_to_add = str(orig) + " = " + lines[1] + ' ' + commentFooter
+        return comment_to_add
 
     # if the number to calculate the factorial of is bigger than 10 then the answer is returned in scientific form
     # and thus needs more processing to format it correctly in to a comment
@@ -336,254 +297,21 @@ def reply_to_comment(num, comment, is_decimal):
 
         if relative_size_fact(exponent[3:]) is not None:
             # construct the entire comment to be posted
-            commentToAdd = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
+            comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
                 number_length + '  ' + line_space + '---  ' + line_space + relative_size_fact(exponent[3:]) + '  ' + \
                 line_space + commentFooter
         else:
             # construct the entire comment to be posted
-            commentToAdd = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
+            comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
                       number_length + '  ' + line_space + commentFooter
 
     else:
         # construct the comment to be posted
-        commentToAdd = str(orig) + " = " + lines[1] + ' ' + commentFooter
+        comment_to_add = str(orig) + " = " + lines[1] + ' ' + commentFooter
 
-    print(commentToAdd)
+    print(comment_to_add)
 
-    comment.reply(commentToAdd)
-
-
-def comment_parse():
-    for mention in reddit.inbox.mentions(limit=2):
-        text = mention.body
-        if "+/u/factorial-bot" in text.lower():
-            if re.search(r'(\d+?.)*\d+!+', text):
-                print(1)
-                comment_skip(mention)
-            else:
-                parent = mention.parent()
-                if parent.name != "Factorial-Bot":
-                    if not os.path.isfile("comments_replied_to_by_factorial.txt"):
-                        # start an empty list to fill with the ids of posts replied to
-                        posts_replied_to = []
-
-                    # If a log does exist, load the list of posts already replied to
-
-                    else:
-                        # Read the file into a list and remove any empty values
-                        with open("comments_replied_to_by_factorial.txt", "r") as f:
-                            posts_replied_to = f.read()
-                            posts_replied_to = posts_replied_to.split("\n")
-                            posts_replied_to = filter(None, posts_replied_to)
-                            posts_replied_to = list(posts_replied_to)
-                        if mention.id not in posts_replied_to:
-                            # get the post title
-                            title = string_split(parent.body)
-                            print("here")
-                            # regex matching for any number of digits before any number of exclamation marks
-                            if re.search(r'(\d+?.)*\d+!+', title):
-                                factorial = re.search(r'(\d+?.)*\d+!+', title)
-                                print(factorial.group())
-                                # find the number of exclamation marks used
-                                excalamtion = re.search(r'!+', factorial.group())
-                                number_of_exclamations = len(excalamtion.group())
-                                # take the integer part of the string, exclude the exclamation marks
-                                string_num = factorial.group()[:-number_of_exclamations]
-                                # count number of 'decimal points'
-                                number_of_points = string_num.count('.')
-                                print(number_of_points)
-                                is_decimal = False
-                                if number_of_points > 1:
-                                    num = int("".join(string_num.split(".")))
-                                elif number_of_points == 0:
-                                    num = int(string_num)
-                                else:
-                                    num = float(string_num)
-                                    is_decimal = True
-
-                                if number_of_exclamations == 1:
-                                    if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                                        reply_to_comment(num, mention, is_decimal)
-                                else:
-                                    if num < MULTI_FACTORIAL_UPPER_LIMIT:
-                                        if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
-                                            ans = multifactorial(num, number_of_exclamations)
-
-                                            string_ans = str(ans)
-                                            if len(string_ans) > 8:
-                                                abc = string_ans[0:3]
-                                                prefix = round(int(abc) / 100.0, 2)
-                                                power = len(string_ans) - 1
-                                                ans = str(prefix) + ' x 10^' + str(power)
-                                                sign = SQUIGGLE
-                                            else:
-                                                sign = " = "
-
-                                            # construct the comment to be posted
-                                            commentToAdd = str(num) + "!" * number_of_exclamations + sign + str(ans) + \
-                                                      ' ' + commentFooter
-
-                                            mention.reply(commentToAdd)
-
-                                # Store the current id into list
-                                posts_replied_to.append(mention.id)
-
-                    # Write our updated list back to the file
-                    with open("comments_replied_to_by_factorial.txt", "w") as f:
-                        for post_id in posts_replied_to:
-                            f.write('{0}\n'.format(post_id))
-
-    for mention in reddit.inbox.comment_replies(limit=2):
-        text = mention.body
-        if "+/u/factorial-bot" in text.lower() or "+u/factorial-bot" in text.lower():
-            if re.search(r'(\d+?.)*\d+!+', text):
-                print(1)
-                comment_skip(mention)
-            else:
-                parent = mention.parent()
-                if parent.name != "Factorial-Bot":
-                    if not os.path.isfile("comments_replied_to_by_factorial.txt"):
-                        # start an empty list to fill with the ids of posts replied to
-                        posts_replied_to = []
-
-                    # If a log does exist, load the list of posts already replied to
-
-                    else:
-                        # Read the file into a list and remove any empty values
-                        with open("comments_replied_to_by_factorial.txt", "r") as f:
-                            posts_replied_to = f.read()
-                            posts_replied_to = posts_replied_to.split("\n")
-                            posts_replied_to = filter(None, posts_replied_to)
-                            posts_replied_to = list(posts_replied_to)
-                        if mention.id not in posts_replied_to:
-                            # get the post title
-                            title = string_split(parent.body)
-                            print("here")
-                            # regex matching for any number of digits before any number of exclamation marks
-                            if re.search(r'(\d+?.)*\d+!+', title):
-                                factorial = re.search(r'(\d+?.)*\d+!+', title)
-                                print(factorial.group())
-                                # find the number of exclamation marks used
-                                excalamtion = re.search(r'!+', factorial.group())
-                                number_of_exclamations = len(excalamtion.group())
-                                # take the integer part of the string, exclude the exclamation marks
-                                string_num = factorial.group()[:-number_of_exclamations]
-                                # count number of 'decimal points'
-                                number_of_points = string_num.count('.')
-                                print(number_of_points)
-                                is_decimal = False
-                                if number_of_points > 1:
-                                    num = int("".join(string_num.split(".")))
-                                elif number_of_points == 0:
-                                    num = int(string_num)
-                                else:
-                                    num = float(string_num)
-                                    is_decimal = True
-
-                                if number_of_exclamations == 1:
-                                    if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                                        reply_to_comment(num, mention, is_decimal)
-                                else:
-                                    if num < MULTI_FACTORIAL_UPPER_LIMIT:
-                                        if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
-                                            ans = multifactorial(num, number_of_exclamations)
-
-                                            string_ans = str(ans)
-                                            if len(string_ans) > 8:
-                                                abc = string_ans[0:3]
-                                                prefix = round(int(abc) / 100.0, 2)
-                                                power = len(string_ans) - 1
-                                                ans = str(prefix) + ' x 10^' + str(power)
-                                                sign = SQUIGGLE
-                                            else:
-                                                sign = " = "
-
-                                            # construct the comment to be posted
-                                            commentToAdd = str(num) + "!" * number_of_exclamations + sign + str(ans) + \
-                                                           ' ' + commentFooter
-
-                                            mention.reply(commentToAdd)
-
-                                # Store the current id into list
-                                posts_replied_to.append(mention.id)
-
-                    # Write our updated list back to the file
-                    with open("comments_replied_to_by_factorial.txt", "w") as f:
-                        for post_id in posts_replied_to:
-                            f.write('{0}\n'.format(post_id))
-
-
-def comment_skip(comment):
-    if not os.path.isfile("comments_replied_to_by_factorial.txt"):
-        # start an empty list to fill with the ids of posts replied to
-        posts_replied_to = []
-
-    # If a log does exist, load the list of posts already replied to
-
-    else:
-        # Read the file into a list and remove any empty values
-        with open("comments_replied_to_by_factorial.txt", "r") as f:
-            posts_replied_to = f.read()
-            posts_replied_to = posts_replied_to.split("\n")
-            posts_replied_to = filter(None, posts_replied_to)
-            posts_replied_to = list(posts_replied_to)
-        if comment.id not in posts_replied_to:
-            # get the post title
-            title = string_split(comment.body)
-            print("here")
-            # regex matching for any number of digits before any number of exclamation marks
-            if re.search(r'(\d+?.)*\d+!+', title):
-                factorial = re.search(r'(\d+?.)*\d+!+', title)
-                print(factorial.group())
-                # find the number of exclamation marks used
-                excalamtion = re.search(r'!+', factorial.group())
-                number_of_exclamations = len(excalamtion.group())
-                # take the integer part of the string, exclude the exclamation marks
-                string_num = factorial.group()[:-number_of_exclamations]
-                # count number of 'decimal points'
-                number_of_points = string_num.count('.')
-                print(number_of_points)
-                is_decimal = False
-                if number_of_points > 1:
-                    num = int("".join(string_num.split(".")))
-                elif number_of_points == 0:
-                    num = int(string_num)
-                else:
-                    num = float(string_num)
-                    is_decimal = True
-
-                if number_of_exclamations == 1:
-                    if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                        reply_to_comment(num, comment, is_decimal)
-                else:
-                    if num < MULTI_FACTORIAL_UPPER_LIMIT:
-                        if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
-                            ans = multifactorial(num, number_of_exclamations)
-
-                            string_ans = str(ans)
-                            if len(string_ans) > 8:
-                                abc = string_ans[0:3]
-                                prefix = round(int(abc) / 100.0, 2)
-                                power = len(string_ans) - 1
-                                ans = str(prefix) + ' x 10^' + str(power)
-                                sign = SQUIGGLE
-                            else:
-                                sign = " = "
-
-                            # construct the comment to be posted
-                            commentToAdd = str(num) + "!" * number_of_exclamations + sign + str(ans) + \
-                                           ' ' + commentFooter
-
-                            comment.reply(commentToAdd)
-
-                # Store the current id into list
-                posts_replied_to.append(comment.id)
-
-    # Write our updated list back to the file
-    with open("comments_replied_to_by_factorial.txt", "w") as f:
-        for post_id in posts_replied_to:
-            f.write('{0}\n'.format(post_id))
-
+    return comment_to_add
 
 if __name__ == "__main__":
 
@@ -599,7 +327,7 @@ if __name__ == "__main__":
     times = "%02d:%02d" % (hour, minute)
 
     recent_posts()
-    comment_parse()
+    comment_control()
 
     if "11:03" > times > "11:00":
         reddit.send_message(author, 'Running Fine', 'A-OK at ' + times)
