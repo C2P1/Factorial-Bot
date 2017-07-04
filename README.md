@@ -8,5 +8,7 @@ password
 author 
 wolfram_app_id
 subreddit_post_list 
+client_id
+client_secret
 ```
 
