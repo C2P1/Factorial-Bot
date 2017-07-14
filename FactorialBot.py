@@ -215,8 +215,8 @@ def number_fact(number):
 
 def comment_control():
     for comment in reddit.inbox.mentions(limit=2):
-        result = comment_parse(comment)
         try:
+            result = comment_parse(comment)
             num = result['number']
             is_decimal = result['is_decimal']
             comment_to_make = construct_comment(num, is_decimal)
@@ -226,7 +226,7 @@ def comment_control():
 
     for comment in reddit.inbox.comment_replies(limit=2):
         try:
-            comment_parse(comment)
+            result = comment_parse(comment)
             num = result['number']
             is_decimal = result['is_decimal']
             comment_to_make = construct_comment(num, is_decimal)
