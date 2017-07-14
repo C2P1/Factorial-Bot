@@ -216,17 +216,23 @@ def number_fact(number):
 def comment_control():
     for comment in reddit.inbox.mentions(limit=2):
         result = comment_parse(comment)
-        num = result['number']
-        is_decimal = result['is_decimal']
-        comment_to_make = construct_comment(num, is_decimal)
-        comment.reply(comment_to_make)
+        try:
+            num = result['number']
+            is_decimal = result['is_decimal']
+            comment_to_make = construct_comment(num, is_decimal)
+            comment.reply(comment_to_make)
+        except TypeError as e:
+            print(e)
 
     for comment in reddit.inbox.comment_replies(limit=2):
-        comment_parse(comment)
-        num = result['number']
-        is_decimal = result['is_decimal']
-        comment_to_make = construct_comment(num, is_decimal)
-        comment.reply(comment_to_make)
+        try:
+            comment_parse(comment)
+            num = result['number']
+            is_decimal = result['is_decimal']
+            comment_to_make = construct_comment(num, is_decimal)
+            comment.reply(comment_to_make)
+        except TypeError as e:
+            print(e)
 
 
 def comment_parse(comment):
@@ -263,7 +269,10 @@ def construct_comment(num, is_decimal):
             digits = item
 
     if is_decimal:
+        if lines[1][-3:] == "...":
+            lines[1] = lines[1][:-3]
         comment_to_add = str(orig) + " = " + lines[1] + ' ' + commentFooter
+        print("decimal is " + str(lines[1]))
         return comment_to_add
 
     # if the number to calculate the factorial of is bigger than 10 then the answer is returned in scientific form
