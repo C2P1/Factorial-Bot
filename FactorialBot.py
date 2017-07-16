@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 import sys
@@ -28,8 +29,8 @@ line_space = '''
 '''
 commentFooter = '''
 
----  
-^^I ^^am ^^a ^^bot, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author + \
+---
+^^I ^^am ^^a ^^bot ^^testing, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author + \
                 ''' ^^if ^^you ^^have ^^any ^^questions.'''
 
 
@@ -44,11 +45,11 @@ def recent_posts():
                 print(sub_age)
                 if sub_age < 1000:
                     result = extract_factorial(submission, submission.title)
-                    num = result['number']
-                    is_decimal = result['is_decimal']
-                    comment_to_add = construct_comment(num, is_decimal)
-                    submission.reply(comment_to_add)
-
+                    if result is not None:
+                        num = result['number']
+                        is_decimal = result['is_decimal']
+                        comment_to_add = construct_comment(num, is_decimal)
+                        submission.reply(comment_to_add)
 
     except Exception as error:
         print(str(error))
@@ -67,6 +68,9 @@ def multifactorial(n, m):
 
 
 def extract_factorial(submission, content):
+
+    packet = None
+
     # check tp see if there is a log of posts already replied to
     if not os.path.isfile("posts_replied_to_by_factorial.txt"):
         # start an empty list to fill with the ids of posts replied to
@@ -107,15 +111,10 @@ def extract_factorial(submission, content):
 
                 if number_of_exclamations == 1:
                     if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                        return {'number': num, 'is_decimal': is_decimal}
+                        packet = {'number': num, 'is_decimal': is_decimal}
                 else:
                     if num < MULTI_FACTORIAL_UPPER_LIMIT:
                         if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
-
-
-
-                            # calculate multifactorial function
-
 
                             ans = multifactorial(num, number_of_exclamations)
 
@@ -143,11 +142,13 @@ def extract_factorial(submission, content):
         for post_id in posts_replied_to:
             f.write('{0}\n'.format(post_id))
 
+    return packet
+
 
 def relative_size_fact(power):
     try:
         power = int(power)
-    except Exception as e:
+    except ValueError:
         return " "
     diameter_earth = "The average diameter of planet Earth is 1.27 x 10^4 km"
     area_texas = "The area of texas is 2.686 x 10^5 square miles"
@@ -217,22 +218,38 @@ def comment_control():
     for comment in reddit.inbox.mentions(limit=2):
         try:
             result = comment_parse(comment)
-            num = result['number']
-            is_decimal = result['is_decimal']
-            comment_to_make = construct_comment(num, is_decimal)
-            comment.reply(comment_to_make)
+            if result is not None:
+                num = result['number']
+                is_decimal = result['is_decimal']
+                comment_to_make = construct_comment(num, is_decimal)
+                comment.reply(comment_to_make)
         except TypeError as e:
+            reddit.redditor(author).message(str(e), comment)
             print(e)
 
     for comment in reddit.inbox.comment_replies(limit=2):
         try:
             result = comment_parse(comment)
-            num = result['number']
-            is_decimal = result['is_decimal']
-            comment_to_make = construct_comment(num, is_decimal)
-            comment.reply(comment_to_make)
+            if result is not None:
+                num = result['number']
+                is_decimal = result['is_decimal']
+                comment_to_make = construct_comment(num, is_decimal)
+                comment.reply(comment_to_make)
         except TypeError as e:
+            reddit.redditor(author).message(str(e), comment)
             print(e)
+
+    # for item in reddit.inbox.stream():
+    #     try:
+    #         result = comment_parse(item)
+    #         num = result['number']
+    #         is_decimal = result['is_decimal']
+    #         comment_to_make = construct_comment(num, is_decimal)
+    #         item.reply(comment_to_make)
+    #         item.mark_read()
+    #     except TypeError as e:
+    #         reddit.send_message(author, 'issue', str(e))
+    #         print(e)
 
 
 def comment_parse(comment):
@@ -243,7 +260,7 @@ def comment_parse(comment):
         else:
             parent = comment.parent()
             if parent.name != "Factorial-Bot":
-                return extract_factorial(parent, text)
+                return extract_factorial(parent, parent.body)
 
 
 def construct_comment(num, is_decimal):
@@ -300,7 +317,7 @@ def construct_comment(num, is_decimal):
 
         try:
             number_length = "Number length: " + str(digits)
-        except Exception:
+        except NameError:
             print(exponent[3:])
             number_length = "Number length: " + str(int(exponent[3:]) + 1)
 
@@ -327,7 +344,7 @@ if __name__ == "__main__":
     reddit = praw.Reddit(client_id=client_id,
                          client_secret=client_secret,
                          password=password,
-                         user_agent='factcalc',
+                         user_agent='fact calc',
                          username=username)
 
     now = time.localtime(time.time())
@@ -339,6 +356,6 @@ if __name__ == "__main__":
     comment_control()
 
     if "11:03" > times > "11:00":
-        reddit.send_message(author, 'Running Fine', 'A-OK at ' + times)
+        reddit.redditor(author).message('Running', times)
     elif "23:03" > times > "23:00":
-        reddit.send_message(author, 'Running Fine', 'A-OK at ' + times)
+        reddit.redditor(author).message('Running', times)
