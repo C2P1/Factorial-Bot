@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 
 import sys
@@ -30,7 +29,7 @@ line_space = '''
 commentFooter = '''
 
 ---
-^^I ^^am ^^a ^^bot ^^testing, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author + \
+^^I ^^am ^^a ^^bot, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author + \
                 ''' ^^if ^^you ^^have ^^any ^^questions.'''
 
 
@@ -259,7 +258,8 @@ def comment_parse(comment):
             return extract_factorial(comment, text)
         else:
             parent = comment.parent()
-            if parent.name != "Factorial-Bot":
+            print(parent.author)
+            if parent.author != "Factorial-Bot":
                 return extract_factorial(parent, parent.body)
 
 
@@ -359,3 +359,4 @@ if __name__ == "__main__":
         reddit.redditor(author).message('Running', times)
     elif "23:03" > times > "23:00":
         reddit.redditor(author).message('Running', times)
+
