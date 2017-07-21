@@ -258,7 +258,6 @@ def comment_parse(comment):
             return extract_factorial(comment, text)
         else:
             parent = comment.parent()
-            print(parent.author)
             if parent.author != "Factorial-Bot":
                 return extract_factorial(parent, parent.body)
 
@@ -359,4 +358,3 @@ if __name__ == "__main__":
         reddit.redditor(author).message('Running', times)
     elif "23:03" > times > "23:00":
         reddit.redditor(author).message('Running', times)
-
