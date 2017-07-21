@@ -29,8 +29,8 @@ line_space = '''
 commentFooter = '''
 
 ---
-^^I ^^am ^^a ^^bot, ^^this ^^was ^^performed ^^automatically. ^^Please ^^message ^^/u/''' + author + \
-                ''' ^^if ^^you ^^have ^^any ^^questions.'''
+^^I ^^am ^^a ^^bot ^^|  [^^Info ^^at ^^/r/Factorial-Bot](http://www.reddit.com/r/factorialbot) ^^| ''' + \
+                '''[^^Contact ](https://www.reddit.com/message/compose/?to=factorial-bot&subject=Factorial-Bot)'''
 
 
 def recent_posts():
