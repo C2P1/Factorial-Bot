@@ -48,7 +48,8 @@ def recent_posts():
                         num = result['number']
                         is_decimal = result['is_decimal']
                         comment_to_add = construct_comment(num, is_decimal)
-                        submission.reply(comment_to_add)
+                        comment = submission.reply(comment_to_add)
+                        reddit.redditor(author).message("Comment made!", str(comment.permalink()))
 
     except Exception as error:
         print(str(error))
@@ -221,7 +222,8 @@ def comment_control():
                 num = result['number']
                 is_decimal = result['is_decimal']
                 comment_to_make = construct_comment(num, is_decimal)
-                comment.reply(comment_to_make)
+                com = comment.reply(comment_to_make)
+                reddit.redditor(author).message("Comment made!", str(com.permalink()))
         except TypeError as e:
             reddit.redditor(author).message(str(e), comment)
             print(e)
@@ -233,7 +235,8 @@ def comment_control():
                 num = result['number']
                 is_decimal = result['is_decimal']
                 comment_to_make = construct_comment(num, is_decimal)
-                comment.reply(comment_to_make)
+                com = comment.reply(comment_to_make)
+                reddit.redditor(author).message("Comment made!", str(com.permalink()))
         except TypeError as e:
             reddit.redditor(author).message(str(e), comment)
             print(e)
