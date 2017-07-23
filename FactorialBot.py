@@ -16,8 +16,8 @@ from config_factorial import *
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 SINGLE_FACTORIAL_UPPER_LIMIT = 1000000000  # largest single factorial it will calculate
-MULTI_FACTORIAL_UPPER_LIMIT = 10000  # largest multifactorial it will calculate
-EXCLAMATION_MARK_LIMIT = 6  # most number of exclamation marks allowed in a multifactorial comment
+MULTI_FACTORIAL_UPPER_LIMIT = 50000  # largest multifactorial it will calculate
+EXCLAMATION_MARK_LIMIT = 25  # most number of exclamation marks allowed in a multifactorial comment
 WOLFRAM_SCIENTIFIC_START = 10  # single factorials bigger than 10! are in scientific notation on wolfram's API
 WOLFRAM_FULL_ANSWER_CUT = 11077  # factorials bigger than 11077! are no longer written out in full in the API
 SQUIGGLE = " ≈ ".decode('utf-8')
@@ -132,7 +132,8 @@ def extract_factorial(submission, content):
                             comment = str(num) + "!" * number_of_exclamations + sign + str(ans) + \
                                 ' ' + commentFooter
 
-                            submission.reply(comment)
+                            com = submission.reply(comment)
+                            reddit.redditor(author).message("Comment made!", str(com.permalink()))
 
                 # Store the current id into list
                 posts_replied_to.append(submission.id)
