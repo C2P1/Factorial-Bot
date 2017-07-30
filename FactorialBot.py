@@ -202,57 +202,19 @@ def relative_size_fact(power):
         return atoms_universe
 
 
-def number_fact(number):
-    if number == 24:
-        return "24 is the smallest number with 3 representations as a sum of 2 distinct primes:     " + \
-          "24 = 5 + 19 = 7 + 17 = 11 + 13"
-    if number == 120:
-        return "120 = binomial(15 + 1, 2) is the 15th triangular number."
-    if number == 720:
-        return "720 has a representation as a sum of 2 squares:     " + \
-               "720 = 12^2 + 24^2"
-    if number == 3628800:
-        return "3628800 is a number that cannot be written as a sum of 3 squares."
-
-
 def comment_control():
-    for comment in reddit.inbox.mentions(limit=2):
+    for item in reddit.inbox.stream():
         try:
-            result = comment_parse(comment)
+            result = comment_parse(item)
             if result is not None:
                 num = result['number']
                 is_decimal = result['is_decimal']
                 comment_to_make = construct_comment(num, is_decimal)
-                com = comment.reply(comment_to_make)
+                com = item.reply(comment_to_make)
                 reddit.redditor(author).message("Comment made!", str(com.permalink()))
         except TypeError as e:
-            reddit.redditor(author).message(str(e), comment)
+            reddit.redditor(author).message(str(e), item)
             print(e)
-
-    for comment in reddit.inbox.comment_replies(limit=2):
-        try:
-            result = comment_parse(comment)
-            if result is not None:
-                num = result['number']
-                is_decimal = result['is_decimal']
-                comment_to_make = construct_comment(num, is_decimal)
-                com = comment.reply(comment_to_make)
-                reddit.redditor(author).message("Comment made!", str(com.permalink()))
-        except TypeError as e:
-            reddit.redditor(author).message(str(e), comment)
-            print(e)
-
-    # for item in reddit.inbox.stream():
-    #     try:
-    #         result = comment_parse(item)
-    #         num = result['number']
-    #         is_decimal = result['is_decimal']
-    #         comment_to_make = construct_comment(num, is_decimal)
-    #         item.reply(comment_to_make)
-    #         item.mark_read()
-    #     except TypeError as e:
-    #         reddit.send_message(author, 'issue', str(e))
-    #         print(e)
 
 
 def comment_parse(comment):
