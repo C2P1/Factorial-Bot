@@ -164,7 +164,7 @@ def relative_size_fact(power):
 
     diameter_op_mom = "The diameter of OP's mom is 7.638 x 10^50 m"
     card_combos = "There are 52! = 8.07 x 10^67 possible combinations of a pack of 52 cards."
-    atoms_universe = "There are 1 x 10^80 atoms in the universe"
+    atoms_universe = "There are 1 x 10^80 atoms in the observable universe"
 
     if power == 4:
         return diameter_earth
