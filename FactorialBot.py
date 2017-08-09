@@ -202,6 +202,19 @@ def relative_size_fact(power):
         return atoms_universe
 
 
+def number_fact(number):
+    if number == 24:
+        return "24 is the smallest number with 3 representations as a sum of 2 distinct primes:     " + \
+          "24 = 5 + 19 = 7 + 17 = 11 + 13"
+    if number == 120:
+        return "120 = binomial(15 + 1, 2) is the 15th triangular number."
+    if number == 720:
+        return "720 has a representation as a sum of 2 squares:     " + \
+               "720 = 12^2 + 24^2"
+    if number == 3628800:
+        return "3628800 is a number that cannot be written as a sum of 3 squares."
+
+
 def comment_control():
     for item in reddit.inbox.stream():
         try:
@@ -246,9 +259,9 @@ def construct_comment(num, is_decimal):
 
     lines = [x for x in lines if x is not None]
 
-    for item in lines:
-        if "decimal digits" in item:
-            digits = item
+    # for item in lines:
+    #     if "decimal digits" in item:
+    #         digits = item
 
     if is_decimal:
         if lines[1][-3:] == "...":
@@ -280,21 +293,19 @@ def construct_comment(num, is_decimal):
         # format the factorial in scientific e notation
         # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
 
-        try:
-            number_length = "Number length: " + str(digits)
-        except NameError:
-            print(exponent[3:])
-            number_length = "Number length: " + str(int(exponent[3:]) + 1)
+        # try:
+        #     number_length = "Number length: " + str(digits)
+        # except NameError:
+        #     print(exponent[3:])
+        #     number_length = "Number length: " + str(int(exponent[3:]) + 1)
 
         if relative_size_fact(exponent[3:]) is not None:
             # construct the entire comment to be posted
             comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
-                number_length + '  ' + line_space + '---  ' + line_space + relative_size_fact(exponent[3:]) + '  ' + \
-                line_space + commentFooter
+                             relative_size_fact(exponent[3:]) + '  ' + line_space + commentFooter
         else:
             # construct the entire comment to be posted
-            comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
-                      number_length + '  ' + line_space + commentFooter
+            comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + commentFooter
 
     else:
         # construct the comment to be posted
