@@ -15,8 +15,8 @@ from config_factorial import *
 
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-SINGLE_FACTORIAL_UPPER_LIMIT = 1000000000  # largest single factorial it will calculate
-MULTI_FACTORIAL_UPPER_LIMIT = 50000  # largest multifactorial it will calculate
+SINGLE_FACTORIAL_UPPER_LIMIT = 100000000000  # largest single factorial it will calculate
+MULTI_FACTORIAL_UPPER_LIMIT = 500000  # largest multifactorial it will calculate
 EXCLAMATION_MARK_LIMIT = 25  # most number of exclamation marks allowed in a multifactorial comment
 WOLFRAM_SCIENTIFIC_START = 10  # single factorials bigger than 10! are in scientific notation on wolfram's API
 WOLFRAM_FULL_ANSWER_CUT = 11077  # factorials bigger than 11077! are no longer written out in full in the API
@@ -30,7 +30,7 @@ commentFooter = '''
 
 ---
 ^^I ^^am ^^a ^^bot ^^|  [^^Info ^^at ^^/r/Factorial-Bot](http://www.reddit.com/r/factorialbot) ^^| ''' + \
-                '''[^^Contact ](https://www.reddit.com/message/compose/?to=factorial-bot&subject=Factorial-Bot)'''
+                '''[^^Contact ](https://www.reddit.com/message/compose/?to=DopeyLizard&subject=Factorial-Bot)'''
 
 
 def recent_posts():
@@ -53,14 +53,63 @@ def recent_posts():
 
     except Exception as error:
         print(str(error))
-        return 1
 
 
 # remove all spaces and commas from the input
-def string_split(text_input):
-    string_one = "".join(text_input.split(" "))
-    string_two = "".join(string_one.split(","))
-    return string_two
+def format_number(text_input):
+    for char in text_input:
+        if char.isalpha():
+            text_input = text_input.replace(char, "", 1)
+    spaceless = "".join(text_input.split(" "))
+    num_periods = spaceless.count(".")
+    num_commas = spaceless.count(",")
+
+    if num_periods == 1 and num_commas == 0:
+        split = spaceless.split(".")
+
+        # check if thousand separator or decimal point
+        if len(split[1]) == 3:
+            return "".join(split)
+        else:
+            return spaceless
+
+    if num_periods == 0 and num_commas == 1:
+        split = spaceless.split(",")
+
+        # check if thousand separator or decimal point
+        if len(split[1]) == 3:
+            return "".join(split)
+        else:
+            return spaceless
+
+    if num_periods >= 2:
+        removed_periods = spaceless.replace(".", "")
+        if num_commas == 1:
+            removed_periods.replace(",", ".")
+        if num_commas > 1:
+            return None
+
+        return removed_periods
+    elif num_commas >= 2:
+        removed_commas = spaceless.replace(",", "")
+        if num_periods > 1:
+            return None
+        return removed_commas
+
+    if num_periods == 1 and num_commas == 1:
+        period_index = spaceless.index('.')
+        comma_index = spaceless.index(',')
+
+        # if commas comes first e.g 4,500.10
+        if period_index > comma_index:
+            return spaceless.replace(",", "")
+
+        # period comes first e.g 4.500,10
+        if period_index < comma_index:
+            step = spaceless.replace(".", "")
+            return step.replace(",", ".")
+
+    return spaceless.replace(",", "")
 
 
 def multifactorial(n, m):
@@ -87,7 +136,9 @@ def extract_factorial(submission, content):
 
         if submission.id not in posts_replied_to:
             # get the post title
-            title = string_split(content)
+            title = format_number(content)
+            if title == -1:
+                return
             # regex matching for any number of digits before any number of exclamation marks
             if re.search(r'(\d+?.)*\d+!+', title):
                 factorial = re.search(r'(\d+?.)*\d+!+', title)
@@ -99,7 +150,6 @@ def extract_factorial(submission, content):
 
                 # count number of 'decimal points'
                 number_of_points = string_num.count('.')
-                print(number_of_points)
                 is_decimal = False
                 if number_of_points > 1:
                     num = int("".join(string_num.split(".")))
@@ -151,20 +201,6 @@ def relative_size_fact(power):
         power = int(power)
     except ValueError:
         return " "
-    diameter_earth = "The average diameter of planet Earth is 1.27 x 10^4 km"
-    area_texas = "The area of texas is 2.686 x 10^5 square miles"
-
-    seconds_decade = "There are 3.156 x 10^8 seconds in a decade."
-    diameter_neptune_orbit = "The diameter of Neptune's orbit is 8.99683742 x 10^9 km"
-    seconds_millennium = "There are 3.156 x 10^10 seconds in a millennium"
-    years_age_universe = "The age of the universe is 1.4 x 10^10 years."
-    seconds_age_universe = "The age of the universe is 4.3 x 10^17 seconds."
-    diameter_milky_way = "The average diameter of the Milky Way is 9.5 x 10^17 km"
-    diameter_universe = "The diameter of the observable universe is 8.8 x 10^23 km"
-
-    diameter_op_mom = "The diameter of OP's mom is 7.638 x 10^50 m"
-    card_combos = "There are 52! = 8.07 x 10^67 possible combinations of a pack of 52 cards."
-    atoms_universe = "There are 1 x 10^80 atoms in the observable universe"
 
     if power == 4:
         return diameter_earth
@@ -216,17 +252,30 @@ def number_fact(number):
 
 
 def comment_control():
-    for item in reddit.inbox.stream():
+    for comment in reddit.inbox.mentions(limit=2):
         try:
-            result = comment_parse(item)
+            result = comment_parse(comment)
             if result is not None:
                 num = result['number']
                 is_decimal = result['is_decimal']
                 comment_to_make = construct_comment(num, is_decimal)
-                com = item.reply(comment_to_make)
+                com = comment.reply(comment_to_make)
                 reddit.redditor(author).message("Comment made!", str(com.permalink()))
         except TypeError as e:
-            reddit.redditor(author).message(str(e), item)
+            reddit.redditor(author).message(str(e), comment)
+            print(e)
+
+    for comment in reddit.inbox.comment_replies(limit=2):
+        try:
+            result = comment_parse(comment)
+            if result is not None:
+                num = result['number']
+                is_decimal = result['is_decimal']
+                comment_to_make = construct_comment(num, is_decimal)
+                com = comment.reply(comment_to_make)
+                reddit.redditor(author).message("Comment made!", str(com.permalink()))
+        except TypeError as e:
+            reddit.redditor(author).message(str(e), comment)
             print(e)
 
 
@@ -259,10 +308,6 @@ def construct_comment(num, is_decimal):
 
     lines = [x for x in lines if x is not None]
 
-    # for item in lines:
-    #     if "decimal digits" in item:
-    #         digits = item
-
     if is_decimal:
         if lines[1][-3:] == "...":
             lines[1] = lines[1][:-3]
@@ -292,12 +337,6 @@ def construct_comment(num, is_decimal):
 
         # format the factorial in scientific e notation
         # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
-
-        # try:
-        #     number_length = "Number length: " + str(digits)
-        # except NameError:
-        #     print(exponent[3:])
-        #     number_length = "Number length: " + str(int(exponent[3:]) + 1)
 
         if relative_size_fact(exponent[3:]) is not None:
             # construct the entire comment to be posted
