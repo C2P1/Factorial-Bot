@@ -21,7 +21,6 @@ SINGLE_FACTORIAL_UPPER_LIMIT = 100000000000  # largest single factorial it will 
 MULTI_FACTORIAL_UPPER_LIMIT = 500000  # largest multifactorial it will calculate
 EXCLAMATION_MARK_LIMIT = 25  # most number of exclamation marks allowed in a multifactorial comment
 WOLFRAM_SCIENTIFIC_START = 10  # single factorials bigger than 10! are in scientific notation on wolfram's API
-WOLFRAM_FULL_ANSWER_CUT = 11077  # factorials bigger than 11077! are no longer written out in full in the API
 SQUIGGLE = " ≈ ".decode('utf-8')
 
 
@@ -29,8 +28,6 @@ line_space = '''
 
 '''
 commentFooter = '''
-
-test
 
 
 ---
@@ -204,9 +201,9 @@ def extract_factorial(submission, content):
                 posts_replied_to.append(submission.id)
 
     # Write our updated list back to the file
-    # with open("posts_replied_to_by_factorial.txt", "w") as f:
-    #     for post_id in posts_replied_to:
-    #         f.write('{0}\n'.format(post_id))
+    with open("posts_replied_to_by_factorial.txt", "w") as f:
+        for post_id in posts_replied_to:
+            f.write('{0}\n'.format(post_id))
 
     return packet
 
@@ -396,7 +393,7 @@ if __name__ == "__main__":
     times = "%02d:%02d" % (hour, minute)
 
     recent_posts()
-    #comment_control()
+    comment_control()
 
     if "11:03" > times > "11:00":
         reddit.redditor(author).message('Running', times)
