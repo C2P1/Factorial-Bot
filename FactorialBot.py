@@ -139,12 +139,12 @@ def extract_factorial(submission, content):
         if submission.id not in posts_replied_to:
             # get the post title
             title = format_number(content)
-            if title == -1:
-                return
+
             # regex matching for any number of digits before any number of exclamation marks
             if re.search(r'(\d+?.)*\d+!+', title):
                 factorial = re.search(r'(\d+?.)*\d+!+', title)
 
+                # count the parentheses in the factorial
                 count = 0
                 for char in str(title):
                     if char == '(':
@@ -326,7 +326,7 @@ def construct_comment(num, is_decimal):
                 primaries.append(sub['plaintext'])
 
     # the factorial that was queried
-    orig = lines[0]
+    orig = num
 
     lines = [x for x in lines if x is not None]
 
@@ -357,7 +357,7 @@ def construct_comment(num, is_decimal):
             factorial = str(mantissa) + ' x ' + exponent
 
             # format the factorial in scientific e notation
-            # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
+            # e_factorial = str(round(float(primaries[0][:8]), 4)) + 'e+' + exponent[3:]
 
             if relative_size_fact(exponent[3:]) is not None:
                 # construct the entire comment to be posted
