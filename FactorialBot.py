@@ -13,7 +13,9 @@ import random
 
 from config_factorial import *
 
+reload(sys)
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+sys.setdefaultencoding('utf-8')
 
 SINGLE_FACTORIAL_UPPER_LIMIT = 100000000000  # largest single factorial it will calculate
 MULTI_FACTORIAL_UPPER_LIMIT = 500000  # largest multifactorial it will calculate
@@ -27,6 +29,9 @@ line_space = '''
 
 '''
 commentFooter = '''
+
+test
+
 
 ---
 ^^I ^^am ^^a ^^bot ^^|  [^^Info ^^at ^^/r/Factorial-Bot](http://www.reddit.com/r/factorialbot) ^^| ''' + \
@@ -68,7 +73,7 @@ def format_number(text_input):
         split = spaceless.split(".")
 
         # check if thousand separator or decimal point
-        if len(split[1]) == 3:
+        if len(split[1][-1]) == 3:
             return "".join(split)
         else:
             return spaceless
@@ -77,7 +82,7 @@ def format_number(text_input):
         split = spaceless.split(",")
 
         # check if thousand separator or decimal point
-        if len(split[1]) == 3:
+        if len(split[1][:-1]) == 3:
             return "".join(split)
         else:
             return spaceless
@@ -85,7 +90,7 @@ def format_number(text_input):
     if num_periods >= 2:
         removed_periods = spaceless.replace(".", "")
         if num_commas == 1:
-            removed_periods.replace(",", ".")
+            removed_periods = removed_periods.replace(",", ".")
         if num_commas > 1:
             return None
 
@@ -142,6 +147,14 @@ def extract_factorial(submission, content):
             # regex matching for any number of digits before any number of exclamation marks
             if re.search(r'(\d+?.)*\d+!+', title):
                 factorial = re.search(r'(\d+?.)*\d+!+', title)
+
+                count = 0
+                for char in str(title):
+                    if char == '(':
+                        count += 1
+                    else:
+                        break
+
                 # find the number of exclamation marks used
                 excalamtion = re.search(r'!+', factorial.group())
                 number_of_exclamations = len(excalamtion.group())
@@ -159,9 +172,11 @@ def extract_factorial(submission, content):
                     num = float(string_num)
                     is_decimal = True
 
-                if number_of_exclamations == 1:
+                if (')!' * count) in title:
+                    packet = {'number': ('(' * count) + factorial.group() + (')!' * count), 'is_decimal': is_decimal}
+                elif number_of_exclamations == 1:
                     if num < SINGLE_FACTORIAL_UPPER_LIMIT:
-                        packet = {'number': num, 'is_decimal': is_decimal}
+                        packet = {'number': factorial.group(), 'is_decimal': is_decimal}
                 else:
                     if num < MULTI_FACTORIAL_UPPER_LIMIT:
                         if number_of_exclamations < EXCLAMATION_MARK_LIMIT:
@@ -189,9 +204,9 @@ def extract_factorial(submission, content):
                 posts_replied_to.append(submission.id)
 
     # Write our updated list back to the file
-    with open("posts_replied_to_by_factorial.txt", "w") as f:
-        for post_id in posts_replied_to:
-            f.write('{0}\n'.format(post_id))
+    # with open("posts_replied_to_by_factorial.txt", "w") as f:
+    #     for post_id in posts_replied_to:
+    #         f.write('{0}\n'.format(post_id))
 
     return packet
 
@@ -262,7 +277,7 @@ def comment_control():
                 com = comment.reply(comment_to_make)
                 reddit.redditor(author).message("Comment made!", str(com.permalink()))
         except TypeError as e:
-            reddit.redditor(author).message(str(e), comment)
+            reddit.redditor(author).message(str(e), comment.body + line_space + comment.permalink())
             print(e)
 
     for comment in reddit.inbox.comment_replies(limit=2):
@@ -275,7 +290,7 @@ def comment_control():
                 com = comment.reply(comment_to_make)
                 reddit.redditor(author).message("Comment made!", str(com.permalink()))
         except TypeError as e:
-            reddit.redditor(author).message(str(e), comment)
+            reddit.redditor(author).message(str(e), comment.body + line_space + comment.permalink())
             print(e)
 
 
@@ -295,13 +310,23 @@ def construct_comment(num, is_decimal):
     # login in to wolfram alpha and submit the factorial to be calculated
     app_id = wolfram_app_id
     client = wolframalpha.Client(app_id)
-    res = client.query(str(num) + '!')
+    res = client.query(str(num))
+
+    primaries = []
+    for p in res.results:
+        primaries = [p.text]
 
     # put the result(s) in to a list
     lines = []
+
     for pod in res.pods:
         for sub in pod.subpods:
             lines.append(sub['plaintext'])
+
+    for p in res:
+        if p.title == 'Power of 10 representation':
+            for sub in p.subpod:
+                primaries.append(sub['plaintext'])
 
     # the factorial that was queried
     orig = lines[0]
@@ -309,42 +334,45 @@ def construct_comment(num, is_decimal):
     lines = [x for x in lines if x is not None]
 
     if is_decimal:
-        if lines[1][-3:] == "...":
-            lines[1] = lines[1][:-3]
-        comment_to_add = str(orig) + " = " + lines[1] + ' ' + commentFooter
-        print("decimal is " + str(lines[1]))
+        if "..." in lines[1]:
+            lines[1] = lines[1].replace("...", "")
+        comment_to_add = str(num) + " = " + lines[1] + ' ' + commentFooter
         return comment_to_add
+
+    if "..." in primaries[0]:
+        primaries[0] = primaries[0].replace("...", "")
 
     # if the number to calculate the factorial of is bigger than 10 then the answer is returned in scientific form
     # and thus needs more processing to format it correctly in to a comment
     if num > WOLFRAM_SCIENTIFIC_START:
-        # once the number to calculate the factorial of passes a certain point, the full answer of every single digit
-        # is no longer written out and so the first result is to be taken instead of the second
-        if num > WOLFRAM_FULL_ANSWER_CUT:
-            ans = lines[1]
+        ans = primaries[0]
+
+        if ' × ' in str(ans):
+
+            # round the mantissa of the answer to two decimal places
+            mantissa = str(round(float(primaries[0][:8]), 2))
+
+            # find the exponent in the string
+            space = ans.find(' ')
+            exponent = ans[space + 3:]
+
+            # format the factorial in scientific x10 notation
+            factorial = str(mantissa) + ' x ' + exponent
+
+            # format the factorial in scientific e notation
+            # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
+
+            if relative_size_fact(exponent[3:]) is not None:
+                # construct the entire comment to be posted
+                comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
+                                 relative_size_fact(exponent[3:]) + '  ' + line_space + commentFooter
+            else:
+                # construct the entire comment to be posted
+                comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + commentFooter
+
         else:
-            ans = lines[2]
-        print(ans)
-        # round the mantissa of the answer to two decimal places
-        mantissa = str(round(float(ans[:8]), 2))
 
-        # find the exponent in the string
-        space = ans.find(' ')
-        exponent = ans[space + 3:]
-
-        # format the factorial in scientific x10 notation
-        factorial = str(mantissa) + ' x ' + exponent
-
-        # format the factorial in scientific e notation
-        # e_factorial = str(round(float(ans[:8]), 4)) + 'e+' + exponent[3:]
-
-        if relative_size_fact(exponent[3:]) is not None:
-            # construct the entire comment to be posted
-            comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + '---  ' + line_space + \
-                             relative_size_fact(exponent[3:]) + '  ' + line_space + commentFooter
-        else:
-            # construct the entire comment to be posted
-            comment_to_add = str(orig) + SQUIGGLE + factorial + '  ' + line_space + commentFooter
+            comment_to_add = str(orig) + " = " + primaries[0] + '  ' + line_space + commentFooter
 
     else:
         # construct the comment to be posted
@@ -368,7 +396,7 @@ if __name__ == "__main__":
     times = "%02d:%02d" % (hour, minute)
 
     recent_posts()
-    comment_control()
+    #comment_control()
 
     if "11:03" > times > "11:00":
         reddit.redditor(author).message('Running', times)
