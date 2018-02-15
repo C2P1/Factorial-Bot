@@ -32,7 +32,7 @@ commentFooter = '''
 
 ---
 ^^I ^^am ^^a ^^bot ^^|  [^^Info ^^at ^^/r/Factorial-Bot](http://www.reddit.com/r/factorialbot) ^^| ''' + \
-                '''[^^Contact ](https://www.reddit.com/message/compose/?to=DopeyLizard&subject=Factorial-Bot)'''
+                '''[^^Contact ](https://www.reddit.com/message/compose/?to=''' + author + '''&subject=Factorial-Bot)'''
 
 
 def recent_posts():
