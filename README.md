@@ -1,5 +1,5 @@
 # Factorial-Bot
-Originally built as the in house bot for the subreddit [/r/unexpectedfactorial](https://www.reddit.com/r/unexpectedfactorial/) in which it would calculate the value of any factorials in the post title, the bot's functionality was expanded to be able to be called by users to calculate a factorial anywhere on reddit. Initially designed to continuously run on a raspberry pi. 
+Originally built as the in house bot for the subreddit [/r/unexpectedfactorial](https://www.reddit.com/r/unexpectedfactorial/) in which it would calculate the value of any factorials in the post title, the bot's functionality was expanded to be able to be called by users to calculate a factorial anywhere on reddit. Initially designed to run continuously on a raspberry pi. 
 
 ## Usage
 
